@@ -1,6 +1,6 @@
 import React, { Component } from "react";
-import items from "./data";
-// import Client from "./Contentful";
+// import items from "./data";
+import { client } from "./Contentful";
 
 const RoomContext = React.createContext();
 
@@ -21,58 +21,44 @@ class RoomProvider extends Component {
     pets: false
   };
 
-  // getData;
-  // getData = async () => {
-  //   try {
-  //     let response = await Client.getEntries({
-  //       content_type: "beachResortRoom"
-  //       // order: "sys.createdAt"
-  //       // order: "-fields.price"
-  //     });
-  //     let rooms = this.formatData(response.items);
-  //     let featuredRooms = rooms.filter(room => room.featured === true);
-  //     let maxPrice = Math.max(...rooms.map(item => item.price));
-  //     let maxSize = Math.max(...rooms.map(item => item.size));
-
-  //     this.setState({
-  //       rooms,
-  //       featuredRooms,
-  //       sortedRooms: rooms,
-  //       loading: false,
-  //       price: maxPrice,
-  //       maxPrice,
-  //       maxSize
-  //     });
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
-
   componentDidMount() {
-    // this.getData();
-    let rooms = this.formatData(items);
-    let featuredRooms = rooms.filter(room => room.featured === true);
-    let maxPrice = Math.max(...rooms.map(item => item.price));
-    let maxSize = Math.max(...rooms.map(item => item.size));
+    // contetful data
+    client
+      .getEntries({
+        content_type: "beachResortRoom"
+      })
+      .then(response => this.formatData(response.items))
+      .catch(console.error);
+  }
+
+  // componentDidMount() {
+  //   // this.getData();
+  //   this.formatData(items);
+  // }
+
+  formatData(items) {
+    let tempItems = items.map(item => {
+      let id = item.sys.id;
+      // let images = item.fields.images.map(image => image.fields.file.url);
+      let images = item.fields.images.map(image => image.fields.file.url);
+      let room = { ...item.fields, id, images };
+      return room;
+    });
+
+    let featuredRooms = tempItems.filter(room => room.featured === true);
+    let maxPrice = Math.max(...tempItems.map(item => item.price));
+    let maxSize = Math.max(...tempItems.map(item => item.size));
     this.setState({
-      rooms,
+      rooms: tempItems,
       featuredRooms,
-      sortedRooms: rooms,
+      sortedRooms: tempItems,
       loading: false,
       price: maxPrice,
       maxPrice,
       maxSize
     });
   }
-  formatData(items) {
-    let tempItems = items.map(item => {
-      let id = item.sys.id;
-      let images = item.fields.images.map(image => image.fields.file.url);
-      let room = { ...item.fields, id, images };
-      return room;
-    });
-    return tempItems;
-  }
+
   getRoom = slug => {
     const tempRoom = [...this.state.rooms];
     const room = tempRoom.find(room => room.slug === slug);
